@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mes jeux favoris</title>
+  <style>
+    body {
+      margin: 0; font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background: #121212;
+      color: #eee;
+      padding: 20px;
+      min-height: 100vh;
+    }
+    header {
+      border-bottom: 1px solid #333;
+      padding-bottom: 10px;
+      margin-bottom: 20px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    a, button {
+      background: #00ffcc;
+      color: #000;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 700;
+      text-decoration: none;
+      font-size: 1em;
+      transition: background 0.2s;
+    }
+    a:hover, button:hover {
+      background: #00bfae;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    li {
+      background: #222;
+      margin-bottom: 15px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      padding: 10px;
+      gap: 15px;
+      transition: background 0.3s;
+    }
+    li:hover {
+      background: #333;
+    }
+    li img {
+      width: 80px;
+      height: 45px;
+      object-fit: cover;
+      border-radius: 6px;
+      flex-shrink: 0;
+    }
+    .info {
+      flex-grow: 1;
+    }
+    .info a {
+      color: #00ffcc;
+      font-weight: 700;
+      font-size: 1.1em;
+      text-decoration: none;
+    }
+    .info a:hover {
+      text-decoration: underline;
+    }
+    .btn-remove {
+      background: #ff5a5a;
+      color: #fff;
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-weight: 700;
+    }
+    .empty {
+      font-size: 1.2em;
+      color: #888;
+      text-align: center;
+      margin-top: 40px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Mes jeux favoris</h1>
+    <a href="index.html" aria-label="Retour à l'accueil">← Accueil</a>
+  </header>
+
+  <ul id="favList"></ul>
+  <p class="empty" id="emptyMsg" style="display:none;">Vous n'avez pas encore de jeux favoris.</p>
+
+  <script>
+    const favList = document.getElementById("favList");
+    const emptyMsg = document.getElementById("emptyMsg");
+
+    function loadFavoris() {
+      const favoris = JSON.parse(localStorage.getItem("favoris")) || [];
+      favList.innerHTML = "";
+      if(favoris.length === 0){
+        emptyMsg.style.display = "block";
+        return;
+      }
+      emptyMsg.style.display = "none";
+
+      favoris.forEach(game => {
+        const li = document.createElement("li");
+
+        const img = document.createElement("img");
+        img.src = game.background_image || "";
+        img.alt = `Image de ${game.name}`;
+
+        const info = document.createElement("div");
+        info.className = "info";
+        info.innerHTML = `<a href="jeu.html?id=${game.id}">${game.name}</a>`;
+
+        const btnRemove = document.createElement("button");
+        btnRemove.textContent = "Supprimer";
+        btnRemove.className = "btn-remove";
+        btnRemove.onclick = () => {
+          removeFromFavoris(game.id);
+        };
+
+        li.appendChild(img);
+        li.appendChild(info);
+        li.appendChild(btnRemove);
+
+        favList.appendChild(li);
+      });
+    }
+
+    function removeFromFavoris(id) {
+      let favoris = JSON.parse(localStorage.getItem("favoris")) || [];
+      favoris = favoris.filter(game => game.id !== id);
+      localStorage.setItem("favoris", JSON.stringify(favoris));
+      loadFavoris();
+    }
+
+    loadFavoris();
+  </script>
+</body>
+</html>

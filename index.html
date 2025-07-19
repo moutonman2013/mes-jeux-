@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Liste de jeux vidéo</title>
+  <style>
+    body {
+      margin: 0; font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background: #121212;
+      color: #eee;
+      padding: 20px;
+      min-height: 100vh;
+      display: flex; flex-direction: column;
+      align-items: center;
+    }
+    header {
+      width: 100%;
+      max-width: 1100px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      border-bottom: 1px solid #333;
+      padding-bottom: 15px;
+    }
+    header nav a {
+      color: #00ffcc;
+      font-weight: 700;
+      text-decoration: none;
+      margin-left: 15px;
+      font-size: 1.1em;
+    }
+    header nav a:hover {
+      text-decoration: underline;
+    }
+    h1 {
+      margin: 0;
+    }
+    .filters {
+      margin: 20px 0;
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+      max-width: 1100px;
+      width: 100%;
+      justify-content: center;
+    }
+    select, input[type="search"] {
+      background: #222;
+      color: #eee;
+      border: none;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 1em;
+      min-width: 180px;
+    }
+    select:focus, input[type="search"]:focus {
+      outline: 2px solid #00ffcc;
+    }
+    #gamesList {
+      display: grid;
+      grid-template-columns: repeat(auto-fill,minmax(280px,1fr));
+      gap: 20px;
+      width: 100%;
+      max-width: 1100px;
+    }
+    .game-card {
+      background: #222;
+      border-radius: 12px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 0 10px #00ffcc44;
+      transition: box-shadow 0.3s;
+    }
+    .game-card:hover {
+      box-shadow: 0 0 15px #00ffccbb;
+    }
+    .game-card img {
+      width: 100%;
+      height: 160px;
+      object-fit: cover;
+      background: #333;
+    }
+    .game-info {
+      padding: 15px;
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .game-info h2 {
+      margin: 0 0 10px 0;
+      font-size: 1.2em;
+    }
+    .game-info h2 a {
+      color: #00ffcc;
+      text-decoration: none;
+    }
+    .game-info h2 a:hover {
+      text-decoration: underline;
+    }
+    .meta {
+      font-size: 0.9em;
+      color: #aaa;
+      margin-bottom: 10px;
+    }
+    .btn-fav {
+      align-self: flex-start;
+      background: #ff5a5a;
+      color: white;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    .btn-fav.active {
+      background: #aa0000;
+    }
+    .btn-fav:hover {
+      background: #cc4444;
+    }
+    .loader {
+      color: #00ffcc;
+      font-size: 1.3em;
+      margin-top: 50px;
+      text-align: center;
+      width: 100%;
+    }
+    @media (max-width: 600px){
+      .filters {
+        flex-direction: column;
+        align-items: center;
+      }
+      select, input[type="search"] {
+        min-width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Jeux vidéo</h1>
+    <nav>
+      <a href="favoris.html" aria-label="Voir les jeux favoris">❤️ Favoris</a>
+    </nav>
+  </header>
+
+  <section class="filters" aria-label="Filtres et recherche">
+    <input type="search" id="searchInput" placeholder="Recherche par nom..." aria-label="Recherche de jeux par nom" />
+    <select id="genreSelect" aria-label="Filtrer par genre">
+      <option value="">Tous genres</option>
+    </select>
+    <select id="platformSelect" aria-label="Filtrer par plateforme">
+      <option value="">Toutes plateformes</option>
+    </select>
+  </section>
+
+  <section id="gamesList" aria-live="polite" aria-busy="true">
+    <div class="loader">Chargement des jeux...</div>
+  </section>
+
+  <script>
+    const API_KEY = "b6db41c083794d72b3075e8766a35695";
+    const gamesList = document.getElementById("gamesList");
+    const searchInput = document.getElementById("searchInput");
+    const genreSelect = document.getElementById("genreSelect");
+    const platformSelect = document.getElementById("platformSelect");
+
+    let allGames = [];
+    let genres = [];
+    let platforms = [];
+
+    function setLoading(isLoading){
+      if(isLoading){
+        gamesList.innerHTML = `<div class="loader">Chargement des jeux...</div>`;
+        gamesList.setAttribute("aria-busy", "true");
+      } else {
+        gamesList.setAttribute("aria-busy", "false");
+      }
+    }
+
+    async function fetchGenres(){
+      try {
+        const res = await fetch(`https://api.rawg.io/api/genres?key=${API_KEY}`);
+        const data = await res.json();
+        genres = data.results;
+        genres.forEach(g => {
+          const option = document.createElement("option");
+          option.value = g.id;
+          option.textContent = g.name;
+          genreSelect.appendChild(option);
+        });
+      } catch(e){
+        console.error("Erreur chargement genres", e);
+      }
+    }
+
+    async function fetchPlatforms(){
+      try {
+        const res = await fetch(`https://api.rawg.io/api/platforms/lists/parents?key=${API_KEY}`);
+        const data = await res.json();
+        platforms = data.results;
+        platforms.forEach(p => {
+          const option = document.createElement("option");
+          option.value = p.id;
+          option.textContent = p.name;
+          platformSelect.appendChild(option);
+        });
+      } catch(e){
+        console.error("Erreur chargement plateformes", e);
+      }
+    }
+
+    async function fetchGames(page=1) {
+      setLoading(true);
+      let url = `https://api.rawg.io/api/games?key=${API_KEY}&page_size=40&page=${page}`;
+      const genreId = genreSelect.value;
+      const platformId = platformSelect.value;
+      const search = searchInput.value.trim();
+
+      if(genreId) url += `&genres=${genreId}`;
+      if(platformId) url += `&platforms=${platformId}`;
+      if(search) url += `&search=${encodeURIComponent(search)}`;
+
+      try {
+        const res = await fetch(url);
+        const data = await res.json();
+        setLoading(false);
+        return data.results || [];
+      } catch (e) {
+        console.error("Erreur chargement jeux", e);
+        setLoading(false);
+        return [];
+      }
+    }
+
+    function isFavori(gameId){
+      const favs = JSON.parse(localStorage.getItem("favoris")) || [];
+      return favs.some(g => g.id === gameId);
+    }
+
+    function toggleFavorite(game, btn){
+      let favs = JSON.parse(localStorage.getItem("favoris")) || [];
+      if(isFavori(game.id)){
+        favs = favs.filter(g => g.id !== game.id);
+        btn.textContent = "❤️ Ajouter aux favoris";
+        btn.classList.remove("active");
+      } else {
+        favs.push(game);
+        btn.textContent = "💔 Retirer des favoris";
+        btn.classList.add("active");
+      }
+      localStorage.setItem("favoris", JSON.stringify(favs));
+    }
+
+    function renderGames(games){
+      if(games.length === 0){
+        gamesList.innerHTML = `<p style="text-align:center; width:100%;">Aucun jeu trouvé.</p>`;
+        return;
+      }
+
+      gamesList.innerHTML = "";
+
+      games.forEach(game => {
+        const card = document.createElement("article");
+        card.className = "game-card";
+
+        const img = document.createElement("img");
+        img.src = game.background_image || "";
+        img.alt = `Image de ${game.name}`;
+
+        const info = document.createElement("div");
+        info.className = "game-info";
+
+        const title = document.createElement("h2");
+        const link = document.createElement("a");
+        link.href = `jeu.html?id=${game.id}`;
+        link.textContent = game.name;
+        link.setAttribute("aria-label", `Voir les détails de ${game.name}`);
+        title.appendChild(link);
+
+        const meta = document.createElement("div");
+        meta.className = "meta";
+        const genresNames = game.genres.map(g => g.name).join(", ") || "Genre inconnu";
+        const platformsNames = game.platforms ? game.platforms.map(p => p.platform.name).join(", ") : "Plateforme inconnue";
+        meta.textContent = `${genresNames} | ${platformsNames}`;
+
+        const favBtn = document.createElement("button");
+        favBtn.className = "btn-fav";
+        if(isFavori(game.id)) {
+          favBtn.textContent = "💔 Retirer des favoris";
+          favBtn.classList.add("active");
+        } else {
+          favBtn.textContent = "❤️ Ajouter aux favoris";
+        }
+        favBtn.onclick = () => toggleFavorite(game, favBtn);
+
+        info.appendChild(title);
+        info.appendChild(meta);
+        info.appendChild(favBtn);
+
+        card.appendChild(img);
+        card.appendChild(info);
+
+        gamesList.appendChild(card);
+      });
+    }
+
+    async function updateGames() {
+      const games = await fetchGames();
+      allGames = games;
+      renderGames(games);
+    }
+
+    // Recherche et filtres : mettre à jour les jeux à chaque changement
+    searchInput.addEventListener("input", debounce(updateGames, 500));
+    genreSelect.addEventListener("change", updateGames);
+    platformSelect.addEventListener("change", updateGames);
+
+    // Utilitaire debounce pour limiter les appels API au typing
+    function debounce(fn, delay) {
+      let timer;
+      return function(...args) {
+        clearTimeout(timer);
+        timer = setTimeout(() => fn.apply(this, args), delay);
+      };
+    }
+
+    // Chargement initial : genres + plateformes + jeux
+    async function init() {
+      await Promise.all([fetchGenres(), fetchPlatforms()]);
+      updateGames();
+    }
+
+    init();
+  </script>
+</body>
+</html>
